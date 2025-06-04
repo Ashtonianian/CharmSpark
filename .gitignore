@@ -1,0 +1,25 @@
+# Unreal Engine
+.vs/
+Binaries/
+Build/
+DerivedDataCache/
+Intermediate/
+Saved/
+
+# Compiled files
+*.pdb
+*.obj
+*.ipch
+*.sdf
+*.suo
+*.db
+*.log
+
+# Visual Studio
+*.VC.db
+*.VC.opendb
+
+# User-specific
+*.user
+*.userosscache
+*.sln.docstates
