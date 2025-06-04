@@ -13,6 +13,7 @@ Saved/
 *.sdf
 *.suo
 *.db
+*.pch
 *.log
 
 # Visual Studio
