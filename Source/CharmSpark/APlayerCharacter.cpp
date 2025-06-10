@@ -4,6 +4,8 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Components/InputComponent.h"
 
+
+
 APlayerCharacter::APlayerCharacter()
 {
     PrimaryActorTick.bCanEverTick = true;
@@ -20,19 +22,48 @@ APlayerCharacter::APlayerCharacter()
     SpringArm->TargetArmLength = 300.f; // Distance from player
     SpringArm->bUsePawnControlRotation = true;
     SpringArm->SetRelativeLocation(FVector(0.f, 0.f, 120.f)); // Raise the camera position
+    SpringArm->DestroyComponent(); // optional
+
 
     Camera = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
-    Camera->SetupAttachment(SpringArm);
-    Camera->bUsePawnControlRotation = false;
+    Camera->SetupAttachment(GetMesh(), FName("head")); // Or use the root if there's no head bone
+    Camera->bUsePawnControlRotation = true;
+    Camera->SetRelativeLocation(FVector(0.f, 0.f, 10.f)); // Adjust to eye height inside the head
 
 
+
+
+    // Load skeletal mesh from content
+    static ConstructorHelpers::FObjectFinder<USkeletalMesh> MeshAsset(TEXT("SkeletalMesh'/Game/Characters/Player/HeroModel/BobaFett.BobaFett'"));
+
+
+    if (MeshAsset.Succeeded())
+    {
+        GetMesh()->SetSkeletalMesh(MeshAsset.Object);
+
+        // Position the mesh (important!)
+        GetMesh()->SetRelativeLocation(FVector(0.0f, 0.0f, -90.0f)); // adjust as needed
+        GetMesh()->SetRelativeRotation(FRotator(0.0f, -90.0f, 0.0f)); // faces forward
+    }
 
 }
 
 void APlayerCharacter::BeginPlay()
 {
     Super::BeginPlay();
+
+    if (UWorld* World = GetWorld())
+    {
+        FVector SpawnLocation = GetActorLocation() + FVector(300.0f, 0.0f, 0.0f); // Spawn in front
+        FRotator SpawnRotation = GetActorRotation();
+
+        FActorSpawnParameters SpawnParams;
+        SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
+
+
+    }
 }
+
 
 void APlayerCharacter::Tick(float DeltaTime)
 {
@@ -57,6 +88,8 @@ void APlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCom
 
     PlayerInputComponent->BindAction("Crouch", IE_Pressed, this, &APlayerCharacter::StartCrouching);
     PlayerInputComponent->BindAction("Crouch", IE_Released, this, &APlayerCharacter::StopCrouching);
+
+    PlayerInputComponent->BindAction("Melee", IE_Pressed, this, &APlayerCharacter::DoMelee);
 
 }
 
@@ -111,4 +144,37 @@ void APlayerCharacter::StopCrouching() {
         bIsCrouching = false;
         GetCharacterMovement()->MaxWalkSpeed = WalkSpeed;
     }
+}
+
+void APlayerCharacter::DoMelee()
+{
+    FVector Start = GetActorLocation();
+    FVector Forward = GetActorForwardVector();
+    FVector End = Start + (Forward * 150.0f); // Adjustable melee range
+
+    FHitResult Hit;
+    FCollisionQueryParams Params;
+    Params.AddIgnoredActor(this); // Don't hit self
+
+    bool bHit = GetWorld()->LineTraceSingleByChannel(Hit, Start, End, ECC_Pawn, Params);
+
+    if (bHit)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("Melee hit: %s at %s"), *Hit.GetActor()->GetName(), *Hit.ImpactPoint.ToString());
+
+        // You can use Hit.ImpactPoint here as your adjustable vector
+
+
+    }
+    else
+    {
+        UE_LOG(LogTemp, Warning, TEXT("Melee missed"));
+
+
+    }
+
+
+
+    // Optional: Draw debug line
+    DrawDebugLine(GetWorld(), Start, End, FColor::Red, false, 1.0f, 0, 2.0f);
 }

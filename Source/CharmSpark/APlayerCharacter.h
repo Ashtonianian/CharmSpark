@@ -72,4 +72,8 @@ public:
 
     UFUNCTION(BlueprintCallable)
     void StopCrouching();
+
+    UFUNCTION()
+    void DoMelee();
+
 };
