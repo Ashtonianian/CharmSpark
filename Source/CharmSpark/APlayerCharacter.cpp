@@ -3,6 +3,8 @@
 #include "GameFramework/PlayerController.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Components/InputComponent.h"
+#include "Blueprint/UserWidget.h"
+#include "AEnemyCharacter.h"
 
 
 
@@ -25,10 +27,11 @@ APlayerCharacter::APlayerCharacter()
     SpringArm->DestroyComponent(); // optional
 
 
-    Camera = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
-    Camera->SetupAttachment(GetMesh(), FName("head")); // Or use the root if there's no head bone
-    Camera->bUsePawnControlRotation = true;
-    Camera->SetRelativeLocation(FVector(0.f, 0.f, 10.f)); // Adjust to eye height inside the head
+    FirstPersonCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FirstPersonCamera"));
+    FirstPersonCamera->SetupAttachment(RootComponent); // Or CapsuleComponent if needed
+    FirstPersonCamera->bUsePawnControlRotation = true;
+    FirstPersonCamera->SetRelativeLocation(FVector(0.f, 0.f, 64.f)); // Rough eye height
+
 
 
 
@@ -46,6 +49,13 @@ APlayerCharacter::APlayerCharacter()
         GetMesh()->SetRelativeRotation(FRotator(0.0f, -90.0f, 0.0f)); // faces forward
     }
 
+    static ConstructorHelpers::FClassFinder<UUserWidget> CrosshairClass(TEXT("/Game/UI/WBP_Crosshair")); // Adjust path as needed
+    if (CrosshairClass.Succeeded())
+    {
+        CrosshairWidgetClass = CrosshairClass.Class;
+    }
+
+
 }
 
 void APlayerCharacter::BeginPlay()
@@ -54,14 +64,28 @@ void APlayerCharacter::BeginPlay()
 
     if (UWorld* World = GetWorld())
     {
-        FVector SpawnLocation = GetActorLocation() + FVector(300.0f, 0.0f, 0.0f); // Spawn in front
+        FVector SpawnLocation = GetActorLocation() + FVector(500.0f, 0.0f, 0.0f); // Spawn 500 units in front
         FRotator SpawnRotation = GetActorRotation();
 
         FActorSpawnParameters SpawnParams;
         SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
 
-
+        World->SpawnActor<AEnemyCharacter>(AEnemyCharacter::StaticClass(), SpawnLocation, SpawnRotation, SpawnParams);
     }
+
+
+    if (APlayerController* PC = Cast<APlayerController>(GetController()))
+    {
+        if (CrosshairWidgetClass) // UPROPERTY pointing to your Widget Blueprint
+        {
+            UUserWidget* Crosshair = CreateWidget<UUserWidget>(PC, CrosshairWidgetClass);
+            if (Crosshair)
+            {
+                Crosshair->AddToViewport();
+            }
+        }
+    }
+
 }
 
 
@@ -148,9 +172,11 @@ void APlayerCharacter::StopCrouching() {
 
 void APlayerCharacter::DoMelee()
 {
-    FVector Start = GetActorLocation();
-    FVector Forward = GetActorForwardVector();
-    FVector End = Start + (Forward * 150.0f); // Adjustable melee range
+    FVector Start = FirstPersonCamera->GetComponentLocation();
+    FVector Forward = FirstPersonCamera->GetForwardVector();
+    FVector End = Start + (Forward * 150.0f);
+
+
 
     FHitResult Hit;
     FCollisionQueryParams Params;

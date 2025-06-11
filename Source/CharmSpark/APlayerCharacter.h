@@ -49,6 +49,16 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     bool bIsSprinting;
 
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera")
+    UCameraComponent* FollowCamera;
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera")
+    UCameraComponent* FirstPersonCamera;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = UI)
+    TSubclassOf<UUserWidget> CrosshairWidgetClass;
+
+
     UFUNCTION(BlueprintCallable)
     void Look();
 

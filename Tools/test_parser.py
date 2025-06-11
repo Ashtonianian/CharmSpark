@@ -1,18 +1,27 @@
 import requests
 
-response = requests.post("http://127.0.0.1:8000/edit_class", json={
-    "classname": "APlayerCharacter",
+data = {
+    "classname": "AEnemyCharacter",
     "properties": [
-        "float CrouchSpeed",
-        "bool bIsCrouching"
+        "float Health = 100.0f"
     ],
     "functions": [
-        "StartCrouching",
-        "StopCrouching"
+        {
+            "signature": "float TakeDamage(float DamageAmount, const FDamageEvent& DamageEvent, AController* EventInstigator, AActor* DamageCauser) override",
+            "body": """Health -= DamageAmount;
+UE_LOG(LogTemp, Warning, TEXT("Enemy took damage! Health: %f"), Health);
+if (Health <= 0.0f) {
+    UE_LOG(LogTemp, Warning, TEXT("Enemy died"));
+    Destroy();
+}
+return DamageAmount;"""
+        }
     ],
     "includes": [
-        "GameFramework/CharacterMovementComponent.h"
+        "GameFramework/Character.h",
+        "Kismet/GameplayStatics.h"
     ]
-})
+}
 
+response = requests.post("http://localhost:8000/edit_class", json=data)
 print(response.json())
